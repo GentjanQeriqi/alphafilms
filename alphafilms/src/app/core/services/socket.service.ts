@@ -8,6 +8,11 @@ export interface PhotoAddedEvent {
   photo: any;
 }
 
+export interface PhotoRemovedEvent {
+  sessionId: string;
+  photoId: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class SocketService implements OnDestroy {
   private socket: Socket | null = null;
@@ -42,6 +47,15 @@ export class SocketService implements OnDestroy {
         observer.next(data);
       });
       return () => this.socket?.off('photo-added');
+    });
+  }
+
+  onPhotoRemoved(): Observable<PhotoRemovedEvent> {
+    return new Observable((observer) => {
+      this.socket?.on('photo-removed', (data: PhotoRemovedEvent) => {
+        observer.next(data);
+      });
+      return () => this.socket?.off('photo-removed');
     });
   }
 

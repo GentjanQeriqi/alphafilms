@@ -57,7 +57,8 @@ export class PhotosController {
   }
 
   @Delete('photos/:id')
-  remove(@Param('id') id: string) {
-    return this.photosService.delete(id);
+  async remove(@Param('id') id: string) {
+    const { id: photoId, sessionId } = await this.photosService.delete(id);
+    this.sessionGateway.emitPhotoRemoved(sessionId, photoId);
   }
 }

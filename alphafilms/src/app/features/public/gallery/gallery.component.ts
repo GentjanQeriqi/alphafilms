@@ -1015,6 +1015,14 @@ export class GalleryComponent implements OnInit, OnDestroy {
         this.photos.update((p) => [event.photo, ...p]);
       }
     });
+
+    this.socketService.onPhotoRemoved().subscribe((event) => {
+      if (event.photoId) {
+        this.photos.update((p) => p.filter(ph => ph.id !== event.photoId));
+        this.selectedIds.update(s => { const n = new Set(s); n.delete(event.photoId); return n; });
+        if (this.activePhoto()?.id === event.photoId) this.activePhoto.set(null);
+      }
+    });
   }
 
   photoUrl(photo: Photo): string {

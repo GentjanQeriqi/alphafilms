@@ -52,4 +52,8 @@ export class SessionGateway implements OnGatewayConnection, OnGatewayDisconnect 
   emitPhotoAdded(sessionId: string, photo: any) {
     this.server.to(sessionId).emit('photo-added', { sessionId, photo });
   }
+
+  emitPhotoRemoved(sessionId: string, photoId: string) {
+    this.server.to(sessionId).emit('photo-removed', { sessionId, photoId });
+  }
 }

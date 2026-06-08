@@ -64,7 +64,7 @@ export class PhotosService {
     return this.repo.save(photo);
   }
 
-  async delete(id: string): Promise<void> {
+  async delete(id: string): Promise<{ id: string; sessionId: string }> {
     const photo = await this.repo.findOneBy({ id });
     if (!photo) throw new NotFoundException('Photo not found');
 
@@ -76,6 +76,8 @@ export class PhotosService {
     deleteFile(photo.originalPath);
     deleteFile(photo.webPath);
 
+    const { id: photoId, sessionId } = photo;
     await this.repo.remove(photo);
+    return { id: photoId, sessionId };
   }
 }
