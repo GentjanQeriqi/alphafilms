@@ -18,7 +18,7 @@ import { Photo } from './entities/photo.entity';
         password: config.get('DB_PASS', 'alphafilms'),
         database: config.get('DB_NAME', 'alphafilms'),
         entities: [User, Session, Photo],
-        synchronize: config.get('NODE_ENV') !== 'production',
+        synchronize: true,
         logging: config.get('NODE_ENV') === 'development',
       }),
     }),
