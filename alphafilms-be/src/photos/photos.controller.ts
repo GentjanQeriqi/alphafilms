@@ -8,6 +8,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { PhotosService } from './photos.service';
 import { SessionsService } from '../sessions/sessions.service';
+import { SessionGateway } from '../sockets/session.gateway';
 
 const ALLOWED_MIME = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const MAX_SIZE = 25 * 1024 * 1024;
@@ -18,6 +19,7 @@ export class PhotosController {
   constructor(
     private readonly photosService: PhotosService,
     private readonly sessionsService: SessionsService,
+    private readonly sessionGateway: SessionGateway,
   ) {}
 
   @Get('sessions/:sessionId/photos')
@@ -47,7 +49,11 @@ export class PhotosController {
     if (!file) throw new BadRequestException('No file provided');
 
     const session = await this.sessionsService.findById(sessionId, req.user.id);
-    return this.photosService.processAndSave(sessionId, session.slug, file);
+    const photo = await this.photosService.processAndSave(sessionId, session.slug, file);
+
+    this.sessionGateway.emitPhotoAdded(sessionId, photo);
+
+    return photo;
   }
 
   @Delete('photos/:id')

@@ -1012,7 +1012,7 @@ export class GalleryComponent implements OnInit, OnDestroy {
 
     this.socketService.onPhotoAdded().subscribe((event) => {
       if (event.photo) {
-        this.photos.update((p) => [...p, event.photo]);
+        this.photos.update((p) => [event.photo, ...p]);
       }
     });
   }
