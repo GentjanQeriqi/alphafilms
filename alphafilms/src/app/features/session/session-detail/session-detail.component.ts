@@ -704,9 +704,17 @@ export class SessionDetailComponent implements OnInit, OnDestroy {
     this.socketService.joinSession(sessionId);
     this.socketService.onPhotoAdded().subscribe((event) => {
       if (event.photo) {
-        this.photos.update((p) => [...p, event.photo]);
+        this.photos.update((p) =>
+          p.some(ph => ph.id === event.photo.id) ? p : [...p, event.photo]
+        );
       } else {
         this.loadPhotos(sessionId);
+      }
+    });
+
+    this.socketService.onPhotoRemoved().subscribe((event) => {
+      if (event.photoId) {
+        this.photos.update((p) => p.filter(ph => ph.id !== event.photoId));
       }
     });
   }
