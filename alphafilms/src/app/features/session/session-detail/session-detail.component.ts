@@ -3,7 +3,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { QRCodeComponent } from 'angularx-qrcode';
+import QRCode from 'qrcode';
 import { SessionService } from '../../../core/services/session.service';
 import { PhotoService } from '../../../core/services/photo.service';
 import { SocketService } from '../../../core/services/socket.service';
@@ -17,7 +17,7 @@ import { environment } from '../../../../environments/environment';
 @Component({
   selector: 'app-session-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, QRCodeComponent, PhotoUploadComponent],
+  imports: [CommonModule, RouterLink, PhotoUploadComponent],
   template: `
     <div class="session-detail">
       <div class="container">
@@ -83,14 +83,13 @@ import { environment } from '../../../../environments/environment';
               </div>
 
               <div class="qr-wrapper">
-                <qrcode
-                  [qrdata]="galleryUrl()"
-                  [width]="200"
-                  [errorCorrectionLevel]="'M'"
-                  [colorDark]="'#000000'"
-                  [colorLight]="'#FFFFFF'"
-                  [margin]="2"
-                />
+                @if (qrDataUrl()) {
+                  <img [src]="qrDataUrl()" alt="QR Code" class="qr-img" width="200" height="200" />
+                } @else {
+                  <div class="qr-placeholder">
+                    <div class="qr-spinner"></div>
+                  </div>
+                }
               </div>
 
               <div class="qr-url">
@@ -396,8 +395,26 @@ import { environment } from '../../../../environments/environment';
       border: 1px solid var(--border-default);
       border-radius: var(--radius-lg);
 
-      ::ng-deep canvas, ::ng-deep img {
+      .qr-img {
         border-radius: var(--radius-sm);
+        display: block;
+      }
+
+      .qr-placeholder {
+        width: 200px;
+        height: 200px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .qr-spinner {
+        width: 32px;
+        height: 32px;
+        border: 2px solid var(--border-default);
+        border-top-color: var(--text-primary);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
       }
     }
 
@@ -633,11 +650,12 @@ export class SessionDetailComponent implements OnInit, OnDestroy {
   showUpload = signal(false);
   activePhoto = signal<Photo | null>(null);
   copied = signal(false);
+  qrDataUrl = signal<string>('');
 
   galleryUrl = computed(() => {
     const s = this.session();
     if (!s) return '';
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://photos.domain.com';
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://alphafilms.studio';
     return `${origin}/s/${s.slug}`;
   });
 
@@ -661,9 +679,18 @@ export class SessionDetailComponent implements OnInit, OnDestroy {
         this.session.set(session);
         this.loading.set(false);
         this.loadPhotos(id);
+        this.generateQR();
       },
       error: () => this.loading.set(false),
     });
+  }
+
+  private generateQR(): void {
+    const url = this.galleryUrl();
+    if (!url) return;
+    QRCode.toDataURL(url, { width: 200, margin: 2, color: { dark: '#000000', light: '#ffffff' } })
+      .then(dataUrl => this.qrDataUrl.set(dataUrl))
+      .catch(() => {});
   }
 
   loadPhotos(sessionId: string): void {
@@ -696,11 +723,11 @@ export class SessionDetailComponent implements OnInit, OnDestroy {
   }
 
   downloadQR(): void {
-    const canvas = document.querySelector('qrcode canvas') as HTMLCanvasElement;
-    if (!canvas) return;
+    const dataUrl = this.qrDataUrl();
+    if (!dataUrl) return;
     const link = document.createElement('a');
     link.download = `qr-${this.session()?.slug}.png`;
-    link.href = canvas.toDataURL();
+    link.href = dataUrl;
     link.click();
   }
 
