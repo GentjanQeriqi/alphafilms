@@ -10,12 +10,19 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     config: ConfigService,
     private readonly usersService: UsersService,
   ) {
+    const callbackURL =
+      config.get<string>('GOOGLE_CALLBACK_URL') ||
+      process.env.GOOGLE_CALLBACK_URL ||
+      'https://alphafilms.studio/api/v1/auth/google/callback';
+
     super({
-      clientID: config.get<string>('GOOGLE_CLIENT_ID'),
-      clientSecret: config.get<string>('GOOGLE_CLIENT_SECRET'),
-      callbackURL: config.get<string>('GOOGLE_CALLBACK_URL'),
+      clientID:
+        config.get<string>('GOOGLE_CLIENT_ID') || process.env.GOOGLE_CLIENT_ID,
+      clientSecret:
+        config.get<string>('GOOGLE_CLIENT_SECRET') ||
+        process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL,
       scope: ['email', 'profile'],
-      proxy: true,
     });
   }
 
