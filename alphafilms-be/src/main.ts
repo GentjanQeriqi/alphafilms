@@ -12,7 +12,8 @@ async function bootstrap() {
   }
 
   const app = await NestFactory.create(AppModule);
-  app.set('trust proxy', 1);
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.set('trust proxy', 1);
 
   app.setGlobalPrefix('api/v1');
 
