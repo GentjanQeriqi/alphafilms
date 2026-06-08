@@ -137,12 +137,20 @@ import JSZip from 'jszip';
             </div>
             <div class="gallery__toolbar-right">
               @if (!selectMode()) {
-                <button class="gallery__toolbar-btn" (click)="downloadAll()" [disabled]="downloading()">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="7 10 12 15 17 10"/>
-                    <line x1="12" y1="15" x2="12" y2="3"/>
-                  </svg>
+                <button class="gallery__toolbar-btn" (click)="saveAll()" [disabled]="downloading()">
+                  @if (canShare) {
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                      <polyline points="16 6 12 2 8 6"/>
+                      <line x1="12" y1="2" x2="12" y2="15"/>
+                    </svg>
+                  } @else {
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="7 10 12 15 17 10"/>
+                      <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                  }
                   {{ downloading() ? i18n.t().gallery_downloading : i18n.t().gallery_download_all }}
                 </button>
               }
@@ -192,12 +200,20 @@ import JSZip from 'jszip';
                   }
                   @if (!selectMode()) {
                     <div class="gallery__item-overlay">
-                      <button class="gallery__item-dl" (click)="downloadSingle(photo, $event)" [title]="i18n.t().gallery_download_single">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                          <polyline points="7 10 12 15 17 10"/>
-                          <line x1="12" y1="15" x2="12" y2="3"/>
-                        </svg>
+                      <button class="gallery__item-dl" (click)="saveSingle(photo, $event)" [title]="i18n.t().gallery_download_single">
+                        @if (canShare) {
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                            <polyline points="16 6 12 2 8 6"/>
+                            <line x1="12" y1="2" x2="12" y2="15"/>
+                          </svg>
+                        } @else {
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                          </svg>
+                        }
                       </button>
                     </div>
                   }
@@ -212,12 +228,20 @@ import JSZip from 'jszip';
               <span class="gallery__download-bar-count">
                 {{ i18n.p('gallery_selected_count', {n: selectedIds().size}) }}
               </span>
-              <button class="gallery__download-bar-btn" (click)="downloadSelected()" [disabled]="downloading()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="7 10 12 15 17 10"/>
-                  <line x1="12" y1="15" x2="12" y2="3"/>
-                </svg>
+              <button class="gallery__download-bar-btn" (click)="saveSelected()" [disabled]="downloading()">
+                @if (canShare) {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                    <polyline points="16 6 12 2 8 6"/>
+                    <line x1="12" y1="2" x2="12" y2="15"/>
+                  </svg>
+                } @else {
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                }
                 {{ downloading() ? i18n.t().gallery_downloading : i18n.t().gallery_download_selected }}
               </button>
             </div>
@@ -242,12 +266,29 @@ import JSZip from 'jszip';
     <!-- Lightbox -->
     @if (activePhoto()) {
       <div class="lightbox" (click)="activePhoto.set(null)">
-        <button class="lightbox__close" (click)="activePhoto.set(null)">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"/>
-            <line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-        </button>
+        <div class="lightbox__actions">
+          <button class="lightbox__action-btn" (click)="saveSingle(activePhoto()!, $event)" [title]="i18n.t().gallery_download_single">
+            @if (canShare) {
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+                <polyline points="16 6 12 2 8 6"/>
+                <line x1="12" y1="2" x2="12" y2="15"/>
+              </svg>
+            } @else {
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            }
+          </button>
+          <button class="lightbox__close" (click)="activePhoto.set(null)">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
 
         <button class="lightbox__nav lightbox__nav--prev" (click)="prevPhoto($event)">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -797,10 +838,33 @@ import JSZip from 'jszip';
       padding: var(--space-8) 60px;
     }
 
-    .lightbox__close {
+    .lightbox__actions {
       position: absolute;
-      top: var(--space-5);
-      right: var(--space-5);
+      top: var(--space-4);
+      right: var(--space-4);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      z-index: 10;
+    }
+
+    .lightbox__action-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-full);
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #fff;
+      cursor: pointer;
+      transition: background var(--transition-base);
+      &:hover { background: rgba(255,255,255,0.25); }
+    }
+
+    .lightbox__close {
       width: 40px;
       height: 40px;
       display: flex;
@@ -811,7 +875,6 @@ import JSZip from 'jszip';
       color: rgba(255,255,255,0.8);
       cursor: pointer;
       transition: all var(--transition-base);
-      z-index: 1;
 
       &:hover { background: rgba(255,255,255,0.15); color: white; }
     }
@@ -897,39 +960,61 @@ export class GalleryComponent implements OnInit, OnDestroy {
     }
   }
 
-  async downloadSingle(photo: Photo, event: Event): Promise<void> {
+  get canShare(): boolean {
+    return typeof navigator !== 'undefined' && !!navigator.share && !!navigator.canShare;
+  }
+
+  async saveSingle(photo: Photo, event: Event): Promise<void> {
     event.stopPropagation();
     const url = this.photoUrl(photo);
     const res = await fetch(url);
     const blob = await res.blob();
+    const filename = photo.filename || `photo-${photo.id}.jpg`;
+
+    if (this.canShare) {
+      const file = new File([blob], filename, { type: blob.type });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file] });
+        return;
+      }
+    }
+
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = photo.filename || `photo-${photo.id}.jpg`;
+    link.download = filename;
     link.click();
     URL.revokeObjectURL(link.href);
   }
 
-  async downloadSelected(): Promise<void> {
-    const toDownload = this.photos().filter(p => this.selectedIds().has(p.id));
-    await this.buildZipAndDownload(toDownload);
+  async saveSelected(): Promise<void> {
+    const toSave = this.photos().filter(p => this.selectedIds().has(p.id));
+    await this.savePhotos(toSave);
   }
 
-  async downloadAll(): Promise<void> {
-    await this.buildZipAndDownload(this.photos());
+  async saveAll(): Promise<void> {
+    await this.savePhotos(this.photos());
   }
 
-  private async buildZipAndDownload(photos: Photo[]): Promise<void> {
+  private async savePhotos(photos: Photo[]): Promise<void> {
     if (photos.length === 0) return;
     this.downloading.set(true);
     try {
-      const zip = new JSZip();
-      await Promise.all(photos.map(async (photo, i) => {
-        const url = this.photoUrl(photo);
-        const res = await fetch(url);
+      const blobs = await Promise.all(photos.map(async (photo, i) => {
+        const res = await fetch(this.photoUrl(photo));
         const blob = await res.blob();
         const ext = blob.type.includes('png') ? 'png' : 'jpg';
-        zip.file(`photo-${String(i + 1).padStart(3, '0')}.${ext}`, blob);
+        const name = photo.filename || `photo-${String(i + 1).padStart(3, '0')}.${ext}`;
+        return new File([blob], name, { type: blob.type });
       }));
+
+      if (this.canShare && navigator.canShare({ files: blobs })) {
+        await navigator.share({ files: blobs });
+        return;
+      }
+
+      // Fallback: zip download for desktop
+      const zip = new JSZip();
+      blobs.forEach(f => zip.file(f.name, f));
       const content = await zip.generateAsync({ type: 'blob' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(content);
