@@ -104,6 +104,17 @@ export interface Translations {
   gate_follow_btn: string;
   gate_confirm_btn: string;
   gate_hint: string;
+
+  /* ── Gallery selection & download ── */
+  gallery_select: string;
+  gallery_select_done: string;
+  gallery_select_all: string;
+  gallery_deselect_all: string;
+  gallery_selected_count: string;
+  gallery_download_selected: string;
+  gallery_download_all: string;
+  gallery_downloading: string;
+  gallery_download_single: string;
 }
 
 export const sq: Translations = {
@@ -210,6 +221,17 @@ export const sq: Translations = {
   gate_follow_btn: 'Ndiq @{handle}',
   gate_confirm_btn: 'Ndoqa — hap galerinë',
   gate_hint: 'Pasi të ndiqni, do të shfaqet butoni i konfirmimit',
+
+  /* ── Gallery selection & download ── */
+  gallery_select: 'Zgjedh',
+  gallery_select_done: 'Gatë',
+  gallery_select_all: 'Zgjedh të gjitha',
+  gallery_deselect_all: 'Hiq zgjedhjen',
+  gallery_selected_count: '{n} të zgjedhura',
+  gallery_download_selected: 'Shkarko të zgjedhurat',
+  gallery_download_all: 'Shkarko të gjitha',
+  gallery_downloading: 'Duke shkarkuar...',
+  gallery_download_single: 'Shkarko foton',
 };
 
 export const en: Translations = {
@@ -316,6 +338,17 @@ export const en: Translations = {
   gate_follow_btn: 'Follow @{handle}',
   gate_confirm_btn: 'I followed — open the gallery',
   gate_hint: 'After following, a confirmation button will appear here',
+
+  /* ── Gallery selection & download ── */
+  gallery_select: 'Select',
+  gallery_select_done: 'Done',
+  gallery_select_all: 'Select all',
+  gallery_deselect_all: 'Deselect all',
+  gallery_selected_count: '{n} selected',
+  gallery_download_selected: 'Download selected',
+  gallery_download_all: 'Download all',
+  gallery_downloading: 'Downloading...',
+  gallery_download_single: 'Download photo',
 };
 
 export const TRANSLATIONS: Record<Lang, Translations> = { sq, en };

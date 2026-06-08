@@ -1,5 +1,5 @@
 import {
-  Component, inject, signal, OnInit, OnDestroy
+  Component, inject, signal, computed, OnInit, OnDestroy
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
@@ -10,6 +10,7 @@ import { I18nService } from '../../../core/services/i18n.service';
 import { Session } from '../../../core/models/session.model';
 import { Photo } from '../../../core/models/photo.model';
 import { environment } from '../../../../environments/environment';
+import JSZip from 'jszip';
 
 @Component({
   selector: 'app-gallery',
@@ -124,13 +125,54 @@ import { environment } from '../../../../environments/environment';
 
         <!-- Photo Grid -->
         @if (photos().length > 0) {
+
+          <!-- Toolbar -->
+          <div class="gallery__toolbar">
+            <div class="gallery__toolbar-left">
+              @if (selectMode()) {
+                <button class="gallery__toolbar-btn gallery__toolbar-btn--ghost" (click)="toggleSelectAll()">
+                  {{ allSelected() ? i18n.t().gallery_deselect_all : i18n.t().gallery_select_all }}
+                </button>
+              }
+            </div>
+            <div class="gallery__toolbar-right">
+              @if (!selectMode()) {
+                <button class="gallery__toolbar-btn" (click)="downloadAll()" [disabled]="downloading()">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  {{ downloading() ? i18n.t().gallery_downloading : i18n.t().gallery_download_all }}
+                </button>
+              }
+              <button
+                class="gallery__toolbar-btn"
+                [class.gallery__toolbar-btn--active]="selectMode()"
+                (click)="toggleSelectMode()"
+              >
+                @if (selectMode()) {
+                  {{ i18n.t().gallery_select_done }}
+                } @else {
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 11 12 14 22 4"/>
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                  </svg>
+                  {{ i18n.t().gallery_select }}
+                }
+              </button>
+            </div>
+          </div>
+
           <div class="gallery__grid-wrapper">
             <div class="gallery__grid">
               @for (photo of photos(); track photo.id; let i = $index) {
                 <div
                   class="gallery__item"
                   [class.gallery__item--wide]="i % 5 === 0"
-                  (click)="openPhoto(photo)"
+                  [class.gallery__item--selected]="isSelected(photo.id)"
+                  [class.gallery__item--select-mode]="selectMode()"
+                  (click)="selectMode() ? toggleSelect(photo.id) : openPhoto(photo)"
                   style="animation-delay: {{ Math.min(i * 40, 400) }}ms"
                 >
                   <img
@@ -139,10 +181,48 @@ import { environment } from '../../../../environments/environment';
                     loading="lazy"
                     class="gallery__item-img"
                   />
+                  @if (selectMode()) {
+                    <div class="gallery__item-check" [class.gallery__item-check--checked]="isSelected(photo.id)">
+                      @if (isSelected(photo.id)) {
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                      }
+                    </div>
+                  }
+                  @if (!selectMode()) {
+                    <div class="gallery__item-overlay">
+                      <button class="gallery__item-dl" (click)="downloadSingle(photo, $event)" [title]="i18n.t().gallery_download_single">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                          <polyline points="7 10 12 15 17 10"/>
+                          <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                      </button>
+                    </div>
+                  }
                 </div>
               }
             </div>
           </div>
+
+          <!-- Floating download bar -->
+          @if (selectMode() && selectedIds().size > 0) {
+            <div class="gallery__download-bar">
+              <span class="gallery__download-bar-count">
+                {{ i18n.p('gallery_selected_count', {n: selectedIds().size}) }}
+              </span>
+              <button class="gallery__download-bar-btn" (click)="downloadSelected()" [disabled]="downloading()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                {{ downloading() ? i18n.t().gallery_downloading : i18n.t().gallery_download_selected }}
+              </button>
+            </div>
+          }
+
         } @else {
           <div class="gallery__empty">
             <div class="gallery__empty-icon">
@@ -478,9 +558,66 @@ import { environment } from '../../../../environments/environment';
       50% { box-shadow: 0 0 0 5px rgba(34,197,94,0.1); }
     }
 
+    /* Toolbar */
+    .gallery__toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-3) var(--space-6);
+      max-width: 1400px;
+      margin: 0 auto;
+      gap: var(--space-3);
+    }
+
+    .gallery__toolbar-left,
+    .gallery__toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .gallery__toolbar-btn {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      height: 36px;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: var(--radius-full);
+      background: rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.9);
+      font-family: var(--font-family);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      cursor: pointer;
+      transition: all var(--transition-base);
+      white-space: nowrap;
+
+      &:hover:not(:disabled) {
+        background: rgba(255,255,255,0.15);
+        border-color: rgba(255,255,255,0.35);
+      }
+
+      &:disabled { opacity: 0.5; cursor: not-allowed; }
+
+      &--active {
+        background: rgba(255,255,255,0.95);
+        color: #000;
+        border-color: transparent;
+        &:hover { background: #fff; }
+      }
+
+      &--ghost {
+        background: transparent;
+        border-color: transparent;
+        color: rgba(255,255,255,0.7);
+        &:hover { color: rgba(255,255,255,0.95); background: rgba(255,255,255,0.08); }
+      }
+    }
+
     /* Grid */
     .gallery__grid-wrapper {
-      padding: var(--space-8) var(--space-6);
+      padding: var(--space-4) var(--space-6) var(--space-8);
       max-width: 1400px;
       margin: 0 auto;
     }
@@ -498,10 +635,18 @@ import { environment } from '../../../../environments/environment';
       cursor: pointer;
       background: var(--bg-secondary);
       animation: fadeIn 400ms ease both;
+      position: relative;
 
-      &:hover .gallery__item-img {
-        transform: scale(1.03);
+      &:hover .gallery__item-img { transform: scale(1.03); }
+      &:hover .gallery__item-overlay { opacity: 1; }
+
+      &--selected {
+        outline: 3px solid #fff;
+        outline-offset: -3px;
+        .gallery__item-img { transform: scale(0.97); }
       }
+
+      &--select-mode { cursor: pointer; }
     }
 
     .gallery__item-img {
@@ -509,6 +654,104 @@ import { environment } from '../../../../environments/environment';
       display: block;
       object-fit: cover;
       transition: transform var(--transition-slow);
+    }
+
+    /* Per-photo download overlay */
+    .gallery__item-overlay {
+      position: absolute;
+      top: var(--space-2);
+      right: var(--space-2);
+      opacity: 0;
+      transition: opacity var(--transition-base);
+    }
+
+    .gallery__item-dl {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-full);
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(4px);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      transition: background var(--transition-base);
+      &:hover { background: rgba(0,0,0,0.8); }
+    }
+
+    /* Selection checkbox */
+    .gallery__item-check {
+      position: absolute;
+      top: var(--space-2);
+      left: var(--space-2);
+      width: 24px;
+      height: 24px;
+      border-radius: var(--radius-sm);
+      border: 2px solid rgba(255,255,255,0.7);
+      background: rgba(0,0,0,0.3);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition-base);
+      color: #fff;
+
+      &--checked {
+        background: #fff;
+        border-color: #fff;
+        color: #000;
+      }
+    }
+
+    /* Floating download bar */
+    .gallery__download-bar {
+      position: fixed;
+      bottom: var(--space-6);
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      padding: var(--space-3) var(--space-5);
+      background: #fff;
+      color: #000;
+      border-radius: var(--radius-full);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+      z-index: 100;
+      animation: slideUp 200ms ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+      to   { transform: translateX(-50%) translateY(0);    opacity: 1; }
+    }
+
+    .gallery__download-bar-count {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      white-space: nowrap;
+    }
+
+    .gallery__download-bar-btn {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      height: 36px;
+      background: #000;
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-full);
+      font-family: var(--font-family);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background var(--transition-base);
+      &:hover:not(:disabled) { background: #222; }
+      &:disabled { opacity: 0.5; cursor: not-allowed; }
     }
 
     .gallery__empty {
@@ -620,6 +863,83 @@ export class GalleryComponent implements OnInit, OnDestroy {
   private photoService = inject(PhotoService);
   private socketService = inject(SocketService);
   i18n = inject(I18nService);
+
+  selectMode = signal(false);
+  selectedIds = signal<Set<string>>(new Set());
+  downloading = signal(false);
+
+  allSelected = computed(() =>
+    this.photos().length > 0 && this.photos().every(p => this.selectedIds().has(p.id))
+  );
+
+  isSelected(id: string): boolean {
+    return this.selectedIds().has(id);
+  }
+
+  toggleSelectMode(): void {
+    this.selectMode.update(v => !v);
+    if (!this.selectMode()) this.selectedIds.set(new Set());
+  }
+
+  toggleSelect(id: string): void {
+    this.selectedIds.update(set => {
+      const next = new Set(set);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  toggleSelectAll(): void {
+    if (this.allSelected()) {
+      this.selectedIds.set(new Set());
+    } else {
+      this.selectedIds.set(new Set(this.photos().map(p => p.id)));
+    }
+  }
+
+  async downloadSingle(photo: Photo, event: Event): Promise<void> {
+    event.stopPropagation();
+    const url = this.photoUrl(photo);
+    const res = await fetch(url);
+    const blob = await res.blob();
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = photo.filename || `photo-${photo.id}.jpg`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+
+  async downloadSelected(): Promise<void> {
+    const toDownload = this.photos().filter(p => this.selectedIds().has(p.id));
+    await this.buildZipAndDownload(toDownload);
+  }
+
+  async downloadAll(): Promise<void> {
+    await this.buildZipAndDownload(this.photos());
+  }
+
+  private async buildZipAndDownload(photos: Photo[]): Promise<void> {
+    if (photos.length === 0) return;
+    this.downloading.set(true);
+    try {
+      const zip = new JSZip();
+      await Promise.all(photos.map(async (photo, i) => {
+        const url = this.photoUrl(photo);
+        const res = await fetch(url);
+        const blob = await res.blob();
+        const ext = blob.type.includes('png') ? 'png' : 'jpg';
+        zip.file(`photo-${String(i + 1).padStart(3, '0')}.${ext}`, blob);
+      }));
+      const content = await zip.generateAsync({ type: 'blob' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(content);
+      link.download = `${this.session()?.name ?? 'gallery'}.zip`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    } finally {
+      this.downloading.set(false);
+    }
+  }
 
   session = signal<Session | null>(null);
   photos = signal<Photo[]>([]);
