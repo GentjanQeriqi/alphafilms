@@ -704,9 +704,7 @@ export class SessionDetailComponent implements OnInit, OnDestroy {
     this.socketService.joinSession(sessionId);
     this.socketService.onPhotoAdded().subscribe((event) => {
       if (event.photo) {
-        this.photos.update((p) =>
-          p.some(ph => ph.id === event.photo.id) ? p : [...p, event.photo]
-        );
+        this.photos.update((p) => [event.photo, ...p]);
       } else {
         this.loadPhotos(sessionId);
       }
@@ -752,8 +750,7 @@ export class SessionDetailComponent implements OnInit, OnDestroy {
     });
   }
 
-  onPhotosUploaded(photos: Photo[]): void {
-    this.photos.update((p) => [...p, ...photos]);
+  onPhotosUploaded(_photos: Photo[]): void {
     this.showUpload.set(false);
   }
 
